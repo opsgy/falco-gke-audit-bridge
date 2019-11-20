@@ -41,3 +41,15 @@ resource "google_pubsub_subscription" "subscription" {
     ttl = "300000.5s"
   }
 }
+
+# Service Account for falco-gke-audit-bridge
+
+
+resource "google_service_account" "service_account" {
+  account_id   = "falco-gke-audit-bridge"
+}
+
+resource "google_project_iam_member" "service_account_role_binding" {
+  role    = "roles/pubsub.subscriber"
+  member = "serviceAccount:${google_service_account.service_account.email}"
+}
