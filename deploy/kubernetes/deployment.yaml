@@ -1,0 +1,52 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: falco
+  labels:
+    app: falco
+spec:
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: falco
+  template:
+    metadata:
+      labels:
+        app: falco
+    spec:
+      containers:
+      - name: falco
+        image: sysdig/falco
+        args:
+        - /usr/bin/falco
+        - -k
+        - https://$(KUBERNETES_SERVICE_HOST)
+        - -pk
+        ports:
+        - name: tcp
+          containerPort: 8765
+          protocol: TCP
+
+        volumeMounts:
+        - name: falco-config
+          mountPath: /etc/falco
+
+      - name: falco-gke-audit-bridge
+        image: steven166/falco-gke-audit-bridge
+
+        env:
+        - name: FALCO_URL
+          value: "http://127.0.0.18765/k8s-audit"
+        - name: GCP_PUBSUB_SUBSCRIPTION
+          value: "falco-gke-audit-bridge"
+        - name: GCP_SERVICE_ACCOUNT
+          valueFrom:
+            secretKeyRef:
+              name: gcp-service-account
+              key: key.json
+
+      volumes:
+      - name: falco-config
+        configMap:
+          name: falco

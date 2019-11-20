@@ -1,0 +1,20 @@
+{
+  "extends": ["tslint:latest"],
+  "rules": {
+    "interface-name": [false],
+    "no-empty-interface": false,
+    "object-literal-sort-keys": [false],
+    "trailing-comma": [false],
+    "no-invalid-template-strings": [false],
+    "no-string-literal": false,
+    "no-console": true,
+    "radix": false,
+    "no-shadowed-variable": false,
+    "arrow-parens": false,
+    "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore"],
+    "no-submodule-imports": false,
+    "prefer-const": false,
+    "max-classes-per-file": false,
+    "max-line-length": false
+  }
+}
