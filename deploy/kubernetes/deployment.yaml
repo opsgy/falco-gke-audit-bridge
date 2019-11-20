@@ -33,7 +33,7 @@ spec:
           mountPath: /etc/falco
 
       - name: falco-gke-audit-bridge
-        image: steven166/falco-gke-audit-bridge
+        image: quay.io/codeonline/falco-gke-audit-bridge
 
         env:
         - name: FALCO_URL

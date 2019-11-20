@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Send GKE audit events to falco",
   "main": "dist/index.js",
-  "repository": "https://github.com/falco-gke-audit-bridge",
+  "repository": "https://github.com/codeonline-io/falco-gke-audit-bridge",
   "author": "S. Hermans <s.hermans@codeonline.io>",
   "license": "MIT",
   "scripts": {
