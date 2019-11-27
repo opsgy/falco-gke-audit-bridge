@@ -1,12 +1,23 @@
+# PROVIDER
+provider "google" {
+  project = "${var.project}"
+}
 
+# VARIABLE DEFINITIONS
+variable "project" {}
+variable "name" {
+  default = "falco-gke-audit-bridge"
+}
+
+# RESOURCES
 
 # Export audit logs to the PubSub
 resource "google_logging_project_sink" "logging_sink" {
-  name = "falco-gke-audit-bridge"
+  name = "${var.name}"
 
-  destination = "pubsub.googleapis.com/projects/${google_pubsub_topic.intrusion_detection_topic.project}/topics/${google_pubsub_topic.intrusion_detection_topic.name}"
+  destination = "pubsub.googleapis.com/projects/${google_pubsub_topic.topic.project}/topics/${google_pubsub_topic.topic.name}"
 
-  filter = "resource.type="k8s_cluster""
+  filter = "resource.type=\"k8s_cluster\""
 
   unique_writer_identity = true
 }
@@ -23,12 +34,12 @@ resource "google_project_iam_binding" "logging_sink_roles" {
 
 # PubSub Topic
 resource "google_pubsub_topic" "topic" {
-  name = "falco-gke-audit-bridge"
+  name = "${var.name}"
 }
 
 # PubSub Subscription
 resource "google_pubsub_subscription" "subscription" {
-  name = "falco-gke-audit-bridge"
+  name = "${var.name}"
   topic = "${google_pubsub_topic.topic.name}"
 
   # 20 minutes
@@ -46,10 +57,10 @@ resource "google_pubsub_subscription" "subscription" {
 
 
 resource "google_service_account" "service_account" {
-  account_id   = "falco-gke-audit-bridge"
+  account_id = "${var.name}"
 }
 
 resource "google_project_iam_member" "service_account_role_binding" {
-  role    = "roles/pubsub.subscriber"
+  role = "roles/pubsub.subscriber"
   member = "serviceAccount:${google_service_account.service_account.email}"
 }

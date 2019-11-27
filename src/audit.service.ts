@@ -39,22 +39,22 @@ export class AuditService {
     this.gaugeEventsReceiveSum = new Gauge({
       name: "events_receive_sum",
       help: "events received from pubsub",
-      labelNames: [""]
+      labelNames: []
     });
     this.gaugeEventsSendSum = new Gauge({
       name: "events_send_sum",
       help: "events send to falco",
-      labelNames: [""]
+      labelNames: []
     });
     this.gaugeEventsErrorParse = new Gauge({
       name: "events_error_parse",
       help: "errors parsing events from pubsub",
-      labelNames: [""]
+      labelNames: []
     });
     this.gaugeEventsErrorSend = new Gauge({
       name: "events_error_send",
       help: "errors sending events to falco",
-      labelNames: [""]
+      labelNames: []
     });
 
     subscription.on("message", message => {
@@ -65,6 +65,9 @@ export class AuditService {
       try {
         let kubernetesAuditEvent = this.convertAuditEvent(gkeAuditEvent);
         if (kubernetesAuditEvent) {
+          if (process.env[Options.LOG_LEVEL] === "debug") {
+            winston.debug(JSON.stringify(kubernetesAuditEvent, undefined, 2));
+          }
           request({
             uri: falcoUrl,
             method: "POST",
