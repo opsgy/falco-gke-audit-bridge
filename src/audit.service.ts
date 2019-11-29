@@ -12,7 +12,7 @@ import { Options } from "./options";
  */
 export class AuditService {
 
-  private static readonly RESOURCE_URL_REGEX = /[a-zA-Z0-9-]+\/v[a-zA-Z0-9-]+\/(?:namespaces\/([a-zA-Z0-9-]+)\/)?([a-zA-Z0-9-]+)\/([a-zA-Z0-9-]+)(?:\/([a-zA-Z0-9-]+))?/;
+  private static readonly RESOURCE_URL_REGEX = /([a-zA-Z0-9-]+)\/([a-zA-Z0-9-]+)\/(?:namespaces\/([a-zA-Z0-9-]+)\/)?([a-zA-Z0-9-]+)\/([a-zA-Z0-9-]+)(?:\/([a-zA-Z0-9-]+))?/;
 
   private gaugeEventsReceiveSum: Gauge;
   private gaugeEventsSendSum: Gauge;
@@ -109,16 +109,18 @@ export class AuditService {
 
     let resourceUrlMatches = auditEvent.protoPayload.resourceName.match(AuditService.RESOURCE_URL_REGEX);
     if (resourceUrlMatches) {
-      let namespace = resourceUrlMatches[1];
-      let resourceName = resourceUrlMatches[2];
-      let name = resourceUrlMatches[3];
-      let subresource = resourceUrlMatches[4];
+      let apiGroup = resourceUrlMatches[1];
+      let apiVersion = resourceUrlMatches[2];
+      let namespace = resourceUrlMatches[3];
+      let resourceName = resourceUrlMatches[4];
+      let name = resourceUrlMatches[5];
+      let subresource = resourceUrlMatches[6];
       objectRef = {
         resource: resourceName,
         namespace,
         name,
         uid: auditEvent.protoPayload.response && auditEvent.protoPayload.response.metadata && auditEvent.protoPayload.response.metadata.uid,
-        apiVersion: auditEvent.protoPayload.response.apiVersion,
+        apiVersion: apiVersion === "v1" ? apiVersion : `${apiGroup}/${apiVersion}`,
         subresource
       };
     }
