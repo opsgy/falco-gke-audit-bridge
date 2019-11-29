@@ -12,6 +12,8 @@ import { Options } from "./options";
  */
 export class AuditService {
 
+  private static readonly RESOURCE_URL_REGEX = /[a-zA-Z0-9-]+\/v[a-zA-Z0-9-]+\/(?:namespaces\/([a-zA-Z0-9-]+)\/)?([a-zA-Z0-9-]+)\/([a-zA-Z0-9-]+)(?:\/([a-zA-Z0-9-]+))?/;
+
   private gaugeEventsReceiveSum: Gauge;
   private gaugeEventsSendSum: Gauge;
   private gaugeEventsErrorParse: Gauge;
@@ -57,6 +59,12 @@ export class AuditService {
       labelNames: []
     });
 
+    subscription.on("error", error => winston.error(error));
+    subscription.on("close", () => {
+      winston.error("Subscription closed unexpectedly");
+      process.exit(1);
+    });
+
     subscription.on("message", message => {
       this.gaugeEventsReceiveSum.inc();
       winston.debug("receive message: " + message.data);
@@ -98,16 +106,20 @@ export class AuditService {
     let eventTimestamp = new Date(auditEvent.timestamp);
     let verbs = auditEvent.protoPayload.methodName.split(".");
     let objectRef: any;
-    let resourceNames = auditEvent.protoPayload.resourceName.split("/");
-    let resourceName = resourceNames.length >= 2 && resourceNames[resourceNames.length - 2];
-    if (auditEvent.protoPayload.response && auditEvent.protoPayload.response.metadata && resourceName) {
-      let metadata = auditEvent.protoPayload.response.metadata;
+
+    let resourceUrlMatches = auditEvent.protoPayload.resourceName.match(AuditService.RESOURCE_URL_REGEX);
+    if (resourceUrlMatches) {
+      let namespace = resourceUrlMatches[1];
+      let resourceName = resourceUrlMatches[2];
+      let name = resourceUrlMatches[3];
+      let subresource = resourceUrlMatches[4];
       objectRef = {
         resource: resourceName,
-        namespace: metadata.namespace,
-        name: metadata.name,
-        uid: metadata.uid,
-        apiVersion: auditEvent.protoPayload.response.apiVersion
+        namespace,
+        name,
+        uid: auditEvent.protoPayload.response && auditEvent.protoPayload.response.metadata && auditEvent.protoPayload.response.metadata.uid,
+        apiVersion: auditEvent.protoPayload.response.apiVersion,
+        subresource
       };
     }
 
@@ -131,7 +143,7 @@ export class AuditService {
       objectRef,
       responseStatus: {
         metadata: {},
-        code: auditEvent.protoPayload.status.code
+        code: auditEvent.protoPayload.response && auditEvent.protoPayload.response.code || 200
       },
       requestObject: auditEvent.protoPayload.request,
       responseObject: auditEvent.protoPayload.response,
