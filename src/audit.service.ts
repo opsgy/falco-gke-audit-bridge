@@ -18,6 +18,7 @@ export class AuditService {
   private gaugeEventsSendSum: Gauge;
   private gaugeEventsErrorParse: Gauge;
   private gaugeEventsErrorSend: Gauge;
+  private falcoUrl: string;
 
   public async init(): Promise<void> {
     let gcpServiceAccountRaw = process.env[Options.GCP_SERVICE_ACCOUNT];
@@ -36,7 +37,7 @@ export class AuditService {
 
     let subscriptionName = process.env[Options.GCP_PUBSUB_SUBSCRIPTION] || "falco-gke-audit-bridge";
     let subscription = await pubsub.subscription(subscriptionName);
-    let falcoUrl = process.env[Options.FALCO_URL] || "http://127.0.0.18765/k8s-audit";
+    this.falcoUrl = process.env[Options.FALCO_URL] || "http://127.0.0.18765/k8s-audit";
 
     this.gaugeEventsReceiveSum = new Gauge({
       name: "events_receive_sum",
@@ -65,41 +66,53 @@ export class AuditService {
       process.exit(1);
     });
 
-    subscription.on("message", message => {
-      this.gaugeEventsReceiveSum.inc();
-      winston.debug("receive message: " + message.data);
-      let gkeAuditEvent = JSON.parse(message.data) as GKEAuditEvent;
+    subscription.on("message", message => this.handleMessage(message));
 
-      try {
-        let kubernetesAuditEvent = this.convertAuditEvent(gkeAuditEvent);
-        if (kubernetesAuditEvent) {
-          if (process.env[Options.LOG_LEVEL] === "debug") {
-            winston.debug(JSON.stringify(kubernetesAuditEvent, undefined, 2));
-          }
-          request({
-            uri: falcoUrl,
-            method: "POST",
-            json: true,
-            body: kubernetesAuditEvent
-          }, (e, res, body) => {
-            if (e) {
-              winston.error(`Failed to send event ${gkeAuditEvent.insertId}`, e);
-              this.gaugeEventsErrorSend.inc();
-            } else if (res.statusCode >= 400) {
-              winston.error(`Failed to send event ${gkeAuditEvent.insertId}`,
-                `Unexpected status code: ${res.statusCode}, with body: ${body}`);
-              this.gaugeEventsErrorSend.inc();
-            } else {
-              message.ack();
-              this.gaugeEventsSendSum.inc();
-            }
-          });
-        }
-      } catch (e) {
-        winston.error(`Failed to convert event ${gkeAuditEvent.insertId}`, e);
-        this.gaugeEventsErrorParse.inc();
+  }
+
+  private handleMessage(message, retry = 0) {
+    this.gaugeEventsReceiveSum.inc();
+    winston.debug("receive message: " + message.data);
+    let gkeAuditEvent = JSON.parse(message.data) as GKEAuditEvent;
+
+    try {
+      let kubernetesAuditEvent = this.convertAuditEvent(gkeAuditEvent);
+      if (process.env[Options.LOG_LEVEL] === "debug") {
+        winston.debug(JSON.stringify(kubernetesAuditEvent, undefined, 2));
       }
-    });
+      request({
+        uri: this.falcoUrl,
+        method: "POST",
+        json: true,
+        body: kubernetesAuditEvent
+      }, (e, res, body) => {
+        if (e) {
+          if (retry > 2) {
+            winston.error(`Failed to send event ${gkeAuditEvent.insertId}`, e);
+            this.gaugeEventsErrorSend.inc();
+            message.ack();
+          } else {
+            this.handleMessage(message, retry++);
+          }
+        } else if (res.statusCode >= 400) {
+          if (retry > 2) {
+            winston.error(`Failed to send event ${gkeAuditEvent.insertId}`,
+              `Unexpected status code: ${res.statusCode}, with body: ${body}`);
+            this.gaugeEventsErrorSend.inc();
+            message.ack();
+          } else {
+            this.handleMessage(message, retry++);
+          }
+        } else {
+          message.ack();
+          this.gaugeEventsSendSum.inc();
+        }
+      });
+    } catch (e) {
+      winston.error(`Failed to convert event ${gkeAuditEvent.insertId}`, e);
+      this.gaugeEventsErrorParse.inc();
+      message.ack();
+    }
   }
 
   private convertAuditEvent(auditEvent: GKEAuditEvent): KubernetesAuditEvent {
