@@ -1,6 +1,6 @@
 {
   "name": "falco-gke-audit-bridge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Send GKE audit events to falco",
   "main": "dist/index.js",
   "repository": "https://github.com/codeonline-io/falco-gke-audit-bridge",
@@ -21,6 +21,7 @@
     "prom-client": "^10.2.2",
     "request": "^2.83.0",
     "request-promise": "^4.2.2",
+    "throttled-queue": "^1.0.7",
     "winston": "^2.4.0"
   },
   "devDependencies": {

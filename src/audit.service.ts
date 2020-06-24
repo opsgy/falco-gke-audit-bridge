@@ -6,6 +6,7 @@ import * as winston from "winston";
 import { GKEAuditEvent } from "./models/gke-audit-event";
 import { KubernetesAuditEvent } from "./models/kubernetes-audit-event";
 import { Options } from "./options";
+import * as throttledQueue from "throttled-queue";
 
 /**
  * Service for receiving audit events from Pub/Sub, converts it and send it to Falco
@@ -19,6 +20,7 @@ export class AuditService {
   private gaugeEventsErrorParse: Gauge;
   private gaugeEventsErrorSend: Gauge;
   private falcoUrl: string;
+  private throttle;
 
   public async init(): Promise<void> {
     let gcpServiceAccountRaw = process.env[Options.GCP_SERVICE_ACCOUNT];
@@ -66,7 +68,13 @@ export class AuditService {
       process.exit(1);
     });
 
-    subscription.on("message", message => this.handleMessage(message));
+    this.throttle = throttledQueue(parseInt(process.env[Options.RATE_LIMIT_PER_SECOND] || "2") * 10, 10000);
+
+    subscription.on("message", message => {
+      this.throttle(() => {
+        this.handleMessage(message);
+      })
+    });
 
   }
 
