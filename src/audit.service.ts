@@ -2,11 +2,11 @@ import { PubSub } from "@google-cloud/pubsub";
 import * as fs from "fs";
 import { Gauge } from "prom-client";
 import * as request from "request";
+import * as throttledQueue from "throttled-queue";
 import * as winston from "winston";
 import { GKEAuditEvent } from "./models/gke-audit-event";
 import { KubernetesAuditEvent } from "./models/kubernetes-audit-event";
 import { Options } from "./options";
-import * as throttledQueue from "throttled-queue";
 
 /**
  * Service for receiving audit events from Pub/Sub, converts it and send it to Falco
@@ -73,7 +73,7 @@ export class AuditService {
     subscription.on("message", message => {
       this.throttle(() => {
         this.handleMessage(message);
-      })
+      });
     });
 
   }
