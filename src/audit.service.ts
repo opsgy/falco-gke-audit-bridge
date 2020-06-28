@@ -39,7 +39,7 @@ export class AuditService {
 
     let subscriptionName = process.env[Options.GCP_PUBSUB_SUBSCRIPTION] || "falco-gke-audit-bridge";
     let subscription = await pubsub.subscription(subscriptionName);
-    this.falcoUrl = process.env[Options.FALCO_URL] || "http://127.0.0.18765/k8s-audit";
+    this.falcoUrl = process.env[Options.FALCO_URL] || "http://falco:8765/k8s-audit";
 
     this.gaugeEventsReceiveSum = new Gauge({
       name: "events_receive_sum",

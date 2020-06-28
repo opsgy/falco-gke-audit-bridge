@@ -27,7 +27,7 @@ The **falco-gke-audit-bridge** can be configured through the following Environme
 | SERVER_PORT | Port for the builtin webserver to listen on. This webserver exposes a health-check and Prometheus metrics endpoint. | 8080 |
 | GCP_SERVICE_ACCOUNT | JSON Key of a Google Cloud Service Account for listen on a PubSub Subscription. |  |
 | GCP_PUBSUB_SUBSCRIPTION | PubSub Subscription name to listen on for GKE Audit Events. | falco-gke-audit-bridge |
-| FALCO_URL | Falco endpoint to send to Audit Events to. | http://127.0.0.18765/k8s-audit |
+| FALCO_URL | Falco endpoint to send to Audit Events to. | http://falco:8765/k8s-audit |
 | RATE_LIMIT_PER_SECOND | Rate limit of events to send to falco per second | 2
 
 # License
