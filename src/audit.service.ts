@@ -68,7 +68,10 @@ export class AuditService {
       process.exit(1);
     });
 
-    this.throttle = throttledQueue(parseInt(process.env[Options.RATE_LIMIT_PER_SECOND] || "2") * 10, 10000);
+    let rateLimit = parseInt(process.env[Options.RATE_LIMIT_PER_SECOND] || "2");
+    let rateLimitWindow = parseInt(process.env[Options.RATE_LIMIT_WINDOW] || "1");
+
+    this.throttle = throttledQueue(rateLimit * rateLimitWindow, rateLimitWindow * 1000);
 
     subscription.on("message", message => {
       this.throttle(() => {

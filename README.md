@@ -28,7 +28,8 @@ The **falco-gke-audit-bridge** can be configured through the following Environme
 | GCP_SERVICE_ACCOUNT | JSON Key of a Google Cloud Service Account for listen on a PubSub Subscription. |  |
 | GCP_PUBSUB_SUBSCRIPTION | PubSub Subscription name to listen on for GKE Audit Events. | falco-gke-audit-bridge |
 | FALCO_URL | Falco endpoint to send to Audit Events to. | http://falco:8765/k8s-audit |
-| RATE_LIMIT_PER_SECOND | Rate limit of events to send to falco per second | 2
+| RATE_LIMIT_PER_SECOND | Rate limit of events to send to falco per second | 2 |
+| RATE_LIMIT_WINDOW | Time window in seconds to apply the rate limit | 1 |
 
 # License
 MIT
