@@ -1,4 +1,4 @@
-FROM node:10-alpine
+FROM node:16-alpine
 WORKDIR /app
 
 ADD ./package.json package-lock.json ./
@@ -10,7 +10,7 @@ RUN npm run lint && \
     npm test && \
     npm run build
 
-FROM node:10-alpine
+FROM node:16-alpine
 WORKDIR /app
 EXPOSE 8080
 CMD node index.js
