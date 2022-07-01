@@ -102,21 +102,21 @@ export class AuditService {
         body: kubernetesAuditEvent
       }, (e, res, body) => {
         if (e) {
+          winston.error(`Failed to send event ${gkeAuditEvent.insertId} (try: ${retry})`, e);
           if (retry > 2) {
-            winston.error(`Failed to send event ${gkeAuditEvent.insertId}`, e);
             this.gaugeEventsErrorSend.inc();
             message.ack();
           } else {
-            this.handleMessage(message, retry++);
+            this.handleMessage(message, retry + 1);
           }
         } else if (res.statusCode >= 400) {
+          winston.error(`Failed to send event ${gkeAuditEvent.insertId}`,
+            `Unexpected status code: ${res.statusCode}, with body: ${body} (try: ${retry})`);
           if (retry > 2) {
-            winston.error(`Failed to send event ${gkeAuditEvent.insertId}`,
-              `Unexpected status code: ${res.statusCode}, with body: ${body}`);
             this.gaugeEventsErrorSend.inc();
             message.ack();
           } else {
-            this.handleMessage(message, retry++);
+            this.handleMessage(message, retry + 1);
           }
         } else {
           message.ack();
