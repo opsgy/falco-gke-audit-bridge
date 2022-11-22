@@ -5,6 +5,7 @@ import * as request from "request";
 import * as throttledQueue from "throttled-queue";
 import * as winston from "winston";
 import { GKEAuditEvent } from "./models/gke-audit-event";
+import { GoogleAuth } from "google-auth-library";
 import { KubernetesAuditEvent } from "./models/kubernetes-audit-event";
 import { Options } from "./options";
 
@@ -23,20 +24,12 @@ export class AuditService {
   private throttle;
 
   public async init(): Promise<void> {
-    let gcpServiceAccountRaw = process.env[Options.GCP_SERVICE_ACCOUNT];
-    if (!gcpServiceAccountRaw && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      gcpServiceAccountRaw = fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS).toString();
-    }
-    if (!gcpServiceAccountRaw) {
-      throw new Error(`Could now find gcp service account`);
-    }
-    let gcpServiceAccount = JSON.parse(gcpServiceAccountRaw);
-
-    const pubsub = new PubSub({
-      projectId: gcpServiceAccount.project_id,
-      credentials: gcpServiceAccount
+    const auth = new GoogleAuth({
+      scopes: 'https://www.googleapis.com/auth/pubsub'
     });
-
+    const pubsub = new PubSub({
+      auth: auth,
+    });
     let subscriptionName = process.env[Options.GCP_PUBSUB_SUBSCRIPTION] || "falco-gke-audit-bridge";
     let subscription = await pubsub.subscription(subscriptionName, {
       flowControl: {

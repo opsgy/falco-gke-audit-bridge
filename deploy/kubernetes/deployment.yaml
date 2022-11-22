@@ -40,7 +40,7 @@ spec:
           value: "http://127.0.0.18765/k8s-audit"
         - name: GCP_PUBSUB_SUBSCRIPTION
           value: "falco-gke-audit-bridge"
-        - name: GCP_SERVICE_ACCOUNT
+        - name: GOOGLE_APPLICATION_CREDENTIALS
           valueFrom:
             secretKeyRef:
               name: gcp-service-account
